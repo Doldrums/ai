@@ -130,26 +130,27 @@ def mutate(offsprings: List[object], related_chords: List[object]) -> list[objec
     ]
     return offsprings
 
+def sort_pairs(population, fitness):
+  pairs = zip(fitness, population)
+  return [i[1] for i in sorted(pairs, key=lambda x: x[0])]
 
 def select(
-    population: List[object],
-    population_fitness: List[object],
-    offsprings: List[object],
-    offsprings_fitness: List[object],
-    size: int,
+        population: List[object],
+        population_fitness: List[object],
+        offsprings: List[object],
+        offsprings_fitness: List[object],
+        size: int,
 ) -> List[object]:
     # replace "size" number of least fit population members
     # with most fit "size" offsprings
     # returns new population
-    sort_index = np.argsort(population_fitness)
-    population_sorted = np.take(population, sort_index)
-    sort_index = np.argsort(offsprings_fitness)
-    offsprings_sorted = np.take(offsprings, sort_index)
+    population_sorted = sort_pairs(population, population_fitness)
+    offsprings_sorted = sort_pairs(offsprings, offsprings_fitness)
 
     parents = population_sorted[size:]
     offsprings = offsprings_sorted[-size:]
-
-    return [*parents, *offsprings]
+    print(len(parents), len(offsprings))
+    return parents + offsprings
 
 
 def evolution(generations: int, population_size: int, music, chords):
