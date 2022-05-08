@@ -1,7 +1,9 @@
-from typing import List, Tuple
+import random
+from typing import List, Tuple, Union
 
 import numpy as np
-from music21 import midi, converter, stream
+from music21 import midi, converter, harmony
+from music21.harmony import ChordSymbol
 
 PATH_TO_MIDI = "input1.midi"
 
@@ -10,66 +12,107 @@ def midi_parse(midi_file_path):
     return converter.parse(midi_file_path)
 
 
-def find_key(file):
-    return file.analyze("key")
+def find_key(music):
+    return music.analyze("key")
 
 
-def play_music(file):
-    sp = midi.realtime.StreamPlayer(file)
+def get_chords_by_key(key):
+    if str(key) == "d minor":
+        return [
+            harmony.ChordSymbol(root="D", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="E", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="F", kind="major", writeAsChord=True),
+            harmony.ChordSymbol(root="G", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="A", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="B", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="C", kind="major", writeAsChord=True),
+        ]
+
+    elif str(key) == "F major":
+        return [
+            harmony.ChordSymbol(root="F", kind="major", writeAsChord=True),
+            harmony.ChordSymbol(root="G", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="A", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="B", kind="major", writeAsChord=True),
+            harmony.ChordSymbol(root="C", kind="major", writeAsChord=True),
+            harmony.ChordSymbol(root="D", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="E", kind="major", writeAsChord=True),
+        ]
+
+    elif str(key) == "e minor":
+        return [
+            harmony.ChordSymbol(root="E", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="F", kind="major", writeAsChord=True),
+            harmony.ChordSymbol(root="G", kind="major", writeAsChord=True),
+            harmony.ChordSymbol(root="A", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="B", kind="minor", writeAsChord=True),
+            harmony.ChordSymbol(root="C", kind="major", writeAsChord=True),
+            harmony.ChordSymbol(root="D", kind="major", writeAsChord=True),
+        ]
+
+
+def play_music(music):
+    sp = midi.realtime.StreamPlayer(music)
     sp.play()
 
 
-music = midi_parse(PATH_TO_MIDI)
-chords = music.chordify().flatten().getElementsByClass("Chord")
-chords.show('text')
+def get_music_chords(music):
+    return music.chordify().flatten().getElementsByClass("Chord")
 
 
-## EA
-
-def get_individual() -> float:
-    # здесь генерим аккорды по тональности
-    smth = []
-    return smth
+def get_individual(
+        related_chords: List[object], music_duration: int
+) -> list[Union[object, list[object]]]:
+    return [related_chords[random.randint(0, 6)] for i in range(music_duration * 2)]
 
 
-def get_fitness(individual: float) -> float:
+def get_fitness(individual: object) -> object:
     # fitness функция у аккомпанимента
     # fun(individual)
     return 0
 
 
-def get_population(population_size: int) -> List[float]:
-    return [get_individual() for i in range(population_size)]
+def get_population(
+        population_size: int, related_chords: List[object], music_duration: int
+) -> list[list[Union[object, list[object]]]]:
+    return [
+        get_individual(related_chords, music_duration) for i in range(population_size)
+    ]
 
 
-def population_fitness(population: List[float]) -> Tuple[List[float], float]:
+def population_fitness(population: List[object]) -> Tuple[List[object], float]:
     # returns list of individual's fitness and average fitness of the population
     fitness = [get_fitness(individual) for individual in population]
     return (fitness, np.mean(fitness))
 
 
-def roulette_wheel_select(fitness: List[float]) -> int:
-    # returns index of a selected parent
-    # you may use np.random.choice
-    pass
-
-
-def crossover(population: List[float], fitness: List[float], size: int) -> List[float]:
+def crossover(population: List[object], fitness: List[object], size: int) -> List[object]:
     # selects two parents to generate offspring
     # this process continues "size" times
     # returns list of ofssprings
-    offsprings = []
+    for i in range(size):
+        index1 = random.randint(0, len(population) - 1)
+        index2 = random.randint(0, len(population) - 1)
+        tmp = population[index1][5:10]
+        population[index1][5:10] = population[index2][5:10]
+        population[index2][5:10] = tmp
+    offsprings = population
     return offsprings
 
 
-def mutate(offsprings: List[float]) -> List[float]:
+def mutate(offsprings: List[object], related_chords: List[object]) -> list[object]:
     # mutates by adding some noise to the number
-    # np.random.normal might help
-    pass
+    offsprings[random.randint(0, len(offsprings) - 1)] = related_chords[random.randint(0, len(related_chords) - 1)]
+    return offsprings
 
 
-def replace_parents(population: List[float], population_fitness: List[float], offsprings: List[float],
-                    offsprings_fitness: List[float], size: int) -> List[float]:
+def select(
+        population: List[object],
+        population_fitness: List[object],
+        offsprings: List[object],
+        offsprings_fitness: List[object],
+        size: int,
+) -> List[object]:
     # replace "size" number of least fit population members
     # with most fit "size" offsprings
     # returns new population
@@ -84,21 +127,29 @@ def replace_parents(population: List[float], population_fitness: List[float], of
     return [*parents, *offsprings]
 
 
-def evolution(generations: int, population_size: int):
-    population = get_population(population_size)
+def evolution(generations: int, population_size: int, music):
+    related_chords = get_chords_by_key(find_key(music))
+    music_duration = int(music.flatten()[-1].offset)
 
+    population = get_population(population_size, related_chords, music_duration)
+    print(population)
     for generation in range(generations):
         fitness, avg_fitness = population_fitness(population)
 
-        #plotFunction(f'Generation: {generation} Population average fitness: {round(avg_fitness, 3)}', x, y, population,
+        # plotFunction(f'Generation: {generation} Population average fitness: {round(avg_fitness, 3)}', x, y, population,
         #             fitness)
 
         offsprings = crossover(population, fitness, 5)
-        offsprings = mutate(offsprings)
+        offsprings = mutate(offsprings, related_chords)
         offsprings_fitness, offsprings_fitness_avg = population_fitness(offsprings)
-        population = replace_parents(population, fitness, offsprings, offsprings_fitness, 3)
+        population = select(
+            population, fitness, offsprings, offsprings_fitness, 3
+        )
 
     return population
 
 
-population = evolution(generations=15, population_size=49)
+music = midi_parse(PATH_TO_MIDI)
+chords = get_music_chords(music)
+chords.show("text")
+population = evolution(generations=15, population_size=49, music=music)
