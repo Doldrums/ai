@@ -6,7 +6,7 @@ from music21 import midi, converter, harmony, chord, stream
 from music21.harmony import ChordSymbol
 from numpy import ndarray
 
-PATH_TO_MIDI = "input1.mid"
+PATH_TO_MIDI = "input1.midi"
 
 
 def midi_parse(midi_file_path):
@@ -183,4 +183,4 @@ chords = get_music_chords(music)
 # chords.show("text")
 population = evolution(generations=15, population_size=49, music=music, chords=chords)
 midi_stream = stream.Stream(population[0])
-midi_stream.write("midi", fp="test_output.mid")
+midi_stream.write("midi", fp="test_output.midi")
