@@ -3,7 +3,6 @@ from typing import List, Tuple, Union
 
 import numpy as np
 from music21 import midi, converter, harmony, chord, stream
-from music21.harmony import ChordSymbol
 from numpy import ndarray
 
 PATH_TO_MIDI = "input1.midi"
@@ -121,13 +120,12 @@ def crossover(
         tmp = population[index1][5:10]
         population[index1][5:10] = population[index2][5:10]
         population[index2][5:10] = tmp
-    offsprings = population
-    return offsprings
+    return population
 
 
 def mutate(offsprings: List[object], related_chords: List[object]) -> list[object]:
     # mutates by adding some noise to the number
-    offsprings[random.randint(0, len(offsprings) - 1)] = related_chords[
+    offsprings[random.randint(0, len(offsprings) - 1)][random.randint(0, 63)] = related_chords[
         random.randint(0, len(related_chords) - 1)
     ]
     return offsprings
